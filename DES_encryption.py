@@ -136,13 +136,51 @@ finalPermutation = [40, 8, 48, 16, 56, 24, 64, 32,
               35, 3, 43, 11, 51, 19, 59, 27,
               34, 2, 42, 10, 50, 18, 58, 26,
               33, 1, 41, 9, 49, 17, 57, 25]
+def permuteKey(key):
+    keyp = [57, 49, 41, 33, 25, 17, 9,
+    1, 58, 50, 42, 34, 26, 18,
+    10, 2, 59, 51, 43, 35, 27,
+    19, 11, 3, 60, 52, 44, 36,
+    63, 55, 47, 39, 31, 23, 15,
+    7, 62, 54, 46, 38, 30, 22,
+    14, 6, 61, 53, 45, 37, 29,
+    21, 13, 5, 28, 20, 12, 4]
  
+# getting 56 bit key from 64 bit using the parity bits
+    key = permute(key, keyp, 56)
+    return key
+
+def createRoundKeys(key, isEncrypted):
+
+    key = permuteKey(key)
+    
+    leftSide = key[0:28]  
+    rightSide = key[28:56]  
+    
+    roundKeyBinary = []
+    for i in range(0, 16):
+        # Shifting the bits by nth shifts by checking from shift table
+        leftSide = shiftBitsLeft(leftSide, shiftTable[i])
+        rightSide = shiftBitsLeft(rightSide, shiftTable[i])
+    
+        # Combination of left and right string
+        combineString = leftSide + rightSide
+    
+        # Compression of key from 56 to 48 bits
+        roundKey = permute(combineString, keyCompression, 48)
+    
+        roundKeyBinary.append(roundKey)
+    
+    if isEncrypted:
+        roundKeyBinary = roundKeyBinary[::-1]
+    
+    return roundKeyBinary
  
 def encrypt(pt, roundKeyBinary):
+    
     # Initial Permutation
     pt = permute(pt, initialPermutation, 64)
-    print("After initial permutation", binaryToString(pt))
- 
+     
     # Splitting
     leftPart = pt[0:32]
     rightPart = pt[32:64]
@@ -181,24 +219,6 @@ def encrypt(pt, roundKeyBinary):
     return __binaryText
  
  
-plainText = "0011000100110010001100110011010000110101001101100011011100111000"
-key = "1111000100110010001100110011010000110101001101100011011100111111"
- 
-# Key generation
-# --hex to binary
-# --parity bit drop table
-keyp = [57, 49, 41, 33, 25, 17, 9,
-        1, 58, 50, 42, 34, 26, 18,
-        10, 2, 59, 51, 43, 35, 27,
-        19, 11, 3, 60, 52, 44, 36,
-        63, 55, 47, 39, 31, 23, 15,
-        7, 62, 54, 46, 38, 30, 22,
-        14, 6, 61, 53, 45, 37, 29,
-        21, 13, 5, 28, 20, 12, 4]
- 
-# getting 56 bit key from 64 bit using the parity bits
-key = permute(key, keyp, 56)
- 
 # Number of bit shifts
 shiftTable = [1, 1, 2, 2,
                2, 2, 2, 2,
@@ -215,29 +235,3 @@ keyCompression = [14, 17, 11, 24, 1, 5,
             44, 49, 39, 56, 34, 53,
             46, 42, 50, 36, 29, 32]
  
-# Splitting into left and right side
-leftSide = key[0:28]  
-rightSide = key[28:56]  
- 
-roundKeyBinary = []
-for i in range(0, 16):
-    # Shifting the bits by nth shifts by checking from shift table
-    leftSide = shiftBitsLeft(leftSide, shiftTable[i])
-    rightSide = shiftBitsLeft(rightSide, shiftTable[i])
- 
-    # Combination of left and right string
-    combineString = leftSide + rightSide
- 
-    # Compression of key from 56 to 48 bits
-    roundKey = permute(combineString, keyCompression, 48)
- 
-    roundKeyBinary.append(roundKey)
- 
-print("Encryption")
-cipherText = encrypt(plainText, roundKeyBinary)
-print("Cipher Text : ", binaryToString(cipherText))
- 
-print("Decryption")
-roundKeyBinaryReversed = roundKeyBinary[::-1]
-decryptedText = encrypt(cipherText, roundKeyBinaryReversed)
-print("Plain Text : ", binaryToString(decryptedText))
